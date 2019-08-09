@@ -81,7 +81,7 @@ URL_ADDRESSES=url_with_addresses_json
 Set MOLTIN_FLOW_ADDRESSES constant in the **common.py**. This is the name of your flow with addresses. Then set FLOW_FIELDS constant in the **export_addresses.py**, MOLTIN_FLOW_ADDRESSES_ID ennviroment variable in the **.env**, run the file **export_addresses.py** and check FLOWS section on [your dashboard](https://dashboard.moltin.com/)
 
 
-4. To create customers flow set MOLTIN_FLOW_CUSTOMERS constant in the **common.py**. This is the name of your flow with customers. Then set FLOW_FIELDS constant in the **create_customers.py**, MOLTIN_FLOW_CUSTOMERS_ID ennviroment variable in the **.env**, run the file **create_customers.py** and check FLOWS section on [your dashboard](https://dashboard.moltin.com/)
+4. To create customers flow set MOLTIN_FLOW_CUSTOMERS constant in the **common.py**. This is the name of your flow with customers. Then set FLOW_FIELDS constant in the **create_customers.py**, MOLTIN_FLOW_CUSTOMERS_ID ennviroment variable in the **.env**, run the file **create_customers.py** and check FLOWS section on [your dashboard](https://dashboard.moltin.com/). Aslo, **common.py** contains more useful functions for work with Moltin API and you can use them.
 
 
 5. Create new Telegram bot, get token and your ID.
@@ -91,12 +91,13 @@ Set MOLTIN_FLOW_ADDRESSES constant in the **common.py**. This is the name of you
 7. Update **.env** file.
 
 ```bash
-TELEGRAM_TOKEN=telegram_telegram
+TELEGRAM_TOKEN=telegram_token
 TELEGRAM_CHAT_ID_ADMIN=telegram_chat_id_admin
 REDIS_HOST=redis_host
 REDIS_PORT=redis_port
 REDIS_PWD=redis_pwd
-
+PAYMENT_PAYLOAD=your_secret_payment_payload
+PAYMENT_TOKEN_TRANZZO=payment_token
 ```
 
 

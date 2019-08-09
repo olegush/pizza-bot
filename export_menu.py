@@ -37,8 +37,8 @@ def get_slug(name):
     return slug
 
 
-def create_file(file):
-    global headers
+@get_headers
+def create_file(headers, file):
     files = {
         'file': open(file, 'rb'),
         'public': True
@@ -52,8 +52,8 @@ def create_file(file):
         raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
 
 
-def create_relationship(product_id, img_id):
-    global headers
+@get_headers
+def create_relationship(headers, product_id, img_id):
     data = {
         'data': {
             'type': 'main_image',
@@ -69,8 +69,8 @@ def create_relationship(product_id, img_id):
         raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
 
 
-def create_product(name, slug, sku, description, price):
-    global headers
+@get_headers
+def create_product(headers, name, slug, sku, description, price):
     data = {
         'data': {
             'type': 'product',

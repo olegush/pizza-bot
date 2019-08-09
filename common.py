@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 import requests
 from requests.exceptions import HTTPError, ConnectionError
 
@@ -9,6 +12,7 @@ MOLTIN_FLOW_ADDRESSES = 'addresses2'
 MOLTIN_FLOW_CUSTOMERS = 'customers2'
 DVMN_ERR_MSG = 'DVMN API returns error:'
 
+load_dotenv()
 
 class MoltinError(Exception):
     def __init__(self, message):
@@ -24,27 +28,32 @@ def check_resp_json(resp):
         raise MoltinError(f'{MOLTIN_ERR_MSG} {resp.json()}')
 
 
-def get_headers(moltin_client_id, moltin_client_secret):
-    data = {'client_id': str(moltin_client_id),
-            'client_secret': str(moltin_client_secret),
-            'grant_type': 'client_credentials'}
-    try:
-        resp = requests.post(MOLTIN_API_OAUTH_URL, data=data)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        moltin_token = resp.json()['access_token']
-        return {
-            'Authorization': 'Bearer {}'.format(moltin_token),
-            'Content-Type': 'application/json'
-        }
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
-    except ConnectionError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+def get_headers(func):
+    def wrapper(*args):
+        moltin_client_id = os.environ.get('MOLTIN_CLIENT_ID')
+        moltin_client_secret = os.environ.get('MOLTIN_CLIENT_SECRET')
+        data = {'client_id': str(moltin_client_id),
+                'client_secret': str(moltin_client_secret),
+                'grant_type': 'client_credentials'}
+        try:
+            resp = requests.post(MOLTIN_API_OAUTH_URL, data=data)
+            resp.raise_for_status()
+            check_resp_json(resp)
+            moltin_token = resp.json()['access_token']
+            headers = {
+                'Authorization': 'Bearer {}'.format(moltin_token),
+                'Content-Type': 'application/json'
+            }
+            return func(headers, *args)
+        except HTTPError as e:
+            raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+        except ConnectionError as e:
+            raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    return wrapper
 
 
-def create_flow(name):
-    global headers
+@get_headers
+def create_flow(headers, name):
     data = {
         'data': {
             'type': 'flow',
@@ -63,8 +72,8 @@ def create_flow(name):
         raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
 
 
-def create_fields(flow_id, fields):
-    global headers
+@get_headers
+def create_fields(headers, flow_id, fields):
     try:
         result = ''
         for field, type in fields.items():
@@ -99,8 +108,8 @@ def create_fields(flow_id, fields):
         raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
 
 
-def delete_flow(id):
-    global headers
+@get_headers
+def delete_flow(headers, id):
     try:
         resp = requests.delete(f'{MOLTIN_API_URL}/flows/{id}', headers=headers)
         resp.raise_for_status()
@@ -109,8 +118,8 @@ def delete_flow(id):
         raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
 
 
-def get_flow_fields(name):
-    global headers
+@get_headers
+def get_flow_fields(headers, name):
     try:
         resp = requests.get(f'{MOLTIN_API_URL}/flows/{name}/fields', headers=headers)
         resp.raise_for_status()

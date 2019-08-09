@@ -21,7 +21,8 @@ FLOW_ADDRESSES_FIELDS = {
 }
 
 
-def export_addresses(url):
+@get_headers
+def export_addresses(headers, url):
     try:
         response = requests.get(url)
         addresses = response.json()
