@@ -2,13 +2,15 @@ from dotenv import load_dotenv
 import os
 import logging
 
+from flask import Flask, request
 import requests
 from requests.exceptions import HTTPError, ConnectionError
 import redis
-from telegram.ext import Filters, Updater
-from telegram.ext import (CallbackQueryHandler, CommandHandler, MessageHandler,
-                        PreCheckoutQueryHandler, ShippingQueryHandler)
+import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
+from telegram.ext import (Updater, Filters, Dispatcher,
+                        CommandHandler, MessageHandler, CallbackQueryHandler,
+                        PreCheckoutQueryHandler, ShippingQueryHandler)
 import yandex_geocoder
 from geopy import distance
 
@@ -16,11 +18,18 @@ from common import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
                     MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_FLOW_ADDRESSES,
                     MOLTIN_FLOW_CUSTOMERS, DVMN_ERR_MSG, DvmnError)
 
+
+app = Flask(__name__)
+
 load_dotenv()
+
+URL = os.getenv('URL')
+TG_TOKEN = os.getenv('TG_TOKEN')
+
 
 TELEGRAM_ERR_MSG = 'Telegram API returns error:'
 REMINDER_TIME = 60 * 60
-PAYMENT_PAYLOAD = os.environ.get('PAYMENT_PAYLOAD')
+PAYMENT_PAYLOAD = os.getenv('PAYMENT_PAYLOAD')
 
 database = None
 
@@ -35,9 +44,9 @@ def error_callback(bot, update, error):
 def get_database_connection():
     global database
     if database is None:
-        db_pwd = os.environ.get('REDIS_PWD')
-        db_host = os.environ.get('REDIS_HOST')
-        db_port = os.environ.get('REDIS_PORT')
+        db_pwd = os.getenv('REDIS_PWD')
+        db_host = os.getenv('REDIS_HOST')
+        db_port = os.getenv('REDIS_PORT')
         database = redis.Redis(host=db_host, port=db_port, password=db_pwd)
     return database
 
@@ -257,7 +266,7 @@ def display_description(bot, query_data, chat_id):
 
 
 def display_cart(bot, cart, products, total, chat_id):
-    keyboard = [[InlineKeyboardButton(f"Delete {product['name']}", callback_data=product['id'])] for product in cart['data']]
+    keyboard = [[InlineKeyboardButton(f"УДАЛИТЬ {product['name']}", callback_data=product['id'])] for product in cart['data']]
     keyboard.append([InlineKeyboardButton('МЕНЮ', callback_data='goto_menu')])
     if total > 0:
         keyboard.append([InlineKeyboardButton('ОФОРМИТЬ ЗАКАЗ', callback_data='goto_checkout_geo')])
@@ -415,7 +424,7 @@ def handle_checkout_payment(bot, update, job_queue):
         title = 'Оплата заказа'
         description = f'{products}\nСумма:{total} руб.'
         payload = PAYMENT_PAYLOAD
-        provider_token = os.environ.get('PAYMENT_TOKEN_TRANZZO')
+        provider_token = os.getenv('PAYMENT_TOKEN_TRANZZO')
         start_parameter = 'test-payment'
         currency = 'RUB'
         price = total
@@ -466,12 +475,13 @@ def handle_users_reply(bot, update, job_queue):
         raise e
 
 
-def main(telegram_token):
-    # Creates the Telegram Updater, registers all handlers and
-    # starts polling updates from Telegram.
+@app.route(f'/{TG_TOKEN}', methods=['POST'])
+def main():
+    # Creates the Telegram bot, Dispatcher instance, registers all handlers,
+    # get data from Telegram reguest, create update queue and process update.
     try:
-        updater = Updater(telegram_token)
-        dispatcher = updater.dispatcher
+        bot = telegram.Bot(token=TG_TOKEN)
+        dispatcher = Dispatcher(bot, None, workers=0)
         dispatcher.add_handler(CallbackQueryHandler(handle_users_reply, pass_job_queue=True))
         dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply, pass_job_queue=True))
         dispatcher.add_handler(MessageHandler(Filters.location, handle_users_reply, pass_job_queue=True))
@@ -479,11 +489,22 @@ def main(telegram_token):
         dispatcher.add_handler(PreCheckoutQueryHandler(handle_answer_payment))
         dispatcher.add_handler(MessageHandler(Filters.successful_payment, handle_successful_payment))
         dispatcher.add_error_handler(error_callback)
-        updater.start_polling(clean=True)
-        updater.idle()
+        update = telegram.update.Update.de_json(request.get_json(force=True), bot)
+        dispatcher.process_update(update)
+        return 'ok'
     except Exception as e:
         logging.critical(e)
 
 
-if __name__ == '__main__':
-    main(os.environ.get('TELEGRAM_TOKEN'))
+@app.route('/set_webhook', methods=['GET', 'POST'])
+def set_webhook():
+    s = bot.setWebhook(f'{URL}/{TG_TOKEN}')
+    if s:
+        return "webhook setup ok"
+    else:
+        return "webhook setup failed"
+
+
+@app.route("/")
+def hello():
+    return 'hello!'
