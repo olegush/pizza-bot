@@ -3,18 +3,63 @@
 This telegram bot is simple e-shop based on [Moltin API](https://moltin.com) and uses [state machine](https://en.wikipedia.org/wiki/Finite-state_machine) principles. Moltin CSM stores products, user cart and info. [Redis](https://redislabs.com/) DB stores current user statement.
 
 
-## How to install
+## How to install and deploy
 
-1. Python 3 and libraries from **requirements.txt** should be installed. Use virtual environment tool, for example **virtualenv**
+1.Get domain and SSL-certificate, put url to **.env** file.
 
 ```bash
-virtualenv virtualenv_folder_name
-source virtualenv_folder_name/bin/activate
+URL=https://example.com
+```
+
+2. Python 3 and libraries from **requirements.txt** should be installed. Use virtual environment tool, for example **venv**
+
+```bash
+python3 -m venv venv_folder_name
+source venv_folder_name/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
+3. Use WSGI - server, for example [Gunicorn](https://gunicorn.org). Create service:
 
-2. Create [Moltin account](https://dashboard.moltin.com) and get Moltin Client ID and Client secret. Put these parameters to **.env** file. Add your currency https://dashboard.moltin.com/app/settings/currencies
+```bash
+$ sudo nano /etc/systemd/system/app.service
+
+[Unit]
+Description=gunicorn daemon
+Requires=app.socket
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=path_to_project
+Environment="PATH=path_to_virtual_env_bin"
+ExecStart=path_to_gunicorn \
+          --access-logfile - \
+          --workers 3 \
+          --timeout 3000 \
+          --bind unix:/run/app.sock \
+          wsgi:app
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+4. Add Nginx config file:
+
+```bash
+$ sudo nano /etc/nginx/sites-available/project_name
+server {
+    server_name    example.com;
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/run/app.sock;
+    }
+}
+```
+
+5. Create [Moltin account](https://dashboard.moltin.com) and get Moltin Client ID and Client secret. Put these parameters to **.env** file. Add your currency https://dashboard.moltin.com/app/settings/currencies
 
 ```bash
 MOLTIN_CLIENT_ID=moltin_client_id
@@ -22,7 +67,7 @@ MOLTIN_CLIENT_SECRET=moltin_client_secret
 ```
 
 
-3. For menu export you should have json file like this:
+6. For menu export you should have json file like this:
 ```javascript
 [{
 	"id": id,
@@ -53,7 +98,7 @@ URL_MENU=url_with_menu_json
 Set the width of small image with WIDTH_SMALL constant and run **export_menu.py**. Then the process is finished, check your products [here](https://dashboard.moltin.com/app/catalogue/products). Also you'll got original and resized images in the IMAGES_DIR folder.
 
 
-4. For addresses export you should have json file like this:
+7. For addresses export you should have json file like this:
 ```javascript
 [{
 	"id": id,
@@ -81,17 +126,17 @@ URL_ADDRESSES=url_with_addresses_json
 Set MOLTIN_FLOW_ADDRESSES constant in the **common.py**. This is the name of your flow with addresses. Then set FLOW_FIELDS constant in the **export_addresses.py**, MOLTIN_FLOW_ADDRESSES_ID ennviroment variable in the **.env**, run the file **export_addresses.py** and check FLOWS section on [your dashboard](https://dashboard.moltin.com/)
 
 
-4. To create customers flow set MOLTIN_FLOW_CUSTOMERS constant in the **common.py**. This is the name of your flow with customers. Then set FLOW_FIELDS constant in the **create_customers.py**, MOLTIN_FLOW_CUSTOMERS_ID ennviroment variable in the **.env**, run the file **create_customers.py** and check FLOWS section on [your dashboard](https://dashboard.moltin.com/). Aslo, **common.py** contains more useful functions for work with Moltin API and you can use them.
+8. To create customers flow set MOLTIN_FLOW_CUSTOMERS constant in the **common.py**. This is the name of your flow with customers. Then set FLOW_FIELDS constant in the **create_customers.py**, MOLTIN_FLOW_CUSTOMERS_ID ennviroment variable in the **.env**, run the file **create_customers.py** and check FLOWS section on [your dashboard](https://dashboard.moltin.com/). Aslo, **common.py** contains more useful functions for work with Moltin API and you can use them.
 
 
-5. Create new Telegram bot, get token and your ID.
+9. Create new Telegram bot, get token and your ID.
 
-6. Create Redis account, get host, port and password.
+10. Create Redis account, get host, port and password.
 
-7. Update **.env** file.
+11. Update **.env** file.
 
 ```bash
-TELEGRAM_TOKEN=telegram_token
+TG=telegram_token
 TELEGRAM_CHAT_ID_ADMIN=telegram_chat_id_admin
 REDIS_HOST=redis_host
 REDIS_PORT=redis_port
@@ -107,24 +152,6 @@ Run **main.py** and test your e-shop in Telegram.
 
 ![pizza-shop screenshot](screenshots/pizza-shop.png)
 
-
-
-## How to deploy
-
-For example, you can deploy apps on [Heroku](https://heroku.com), with
-GitHub integration.
-
-1. Create app with GitHub deployment method.
-
-2. Add vulnerable environment variables to Settings > Config Vars section.
-
-3. Activate your Dyno in the "Resourses" section.
-
-For reading logs install [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli#download-and-install) and log in.
-
-```bash
-$ heroku logs -a your-app-name
-```
 
 
 ## Project Goals
