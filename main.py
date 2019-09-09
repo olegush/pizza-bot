@@ -505,6 +505,12 @@ def set_webhook():
         return "webhook setup failed"
 
 
+@app.route('/<file_name>.json', methods=['GET'])
+def display_menu_json(file_name):
+    with open(f'{file_name}.json') as f:
+        return f.read()
+
+        
 @app.route("/")
 def hello():
     return 'hello!'
