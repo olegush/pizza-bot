@@ -64,7 +64,7 @@ def add_reminder(bot, job):
                     chat_id=job.context)
 
 
-def handle_start(bot, update):
+def handle_start(bot, update, job_queue):
     message_id, chat_id, query_data = get_query_data(update)
     display_menu(bot, chat_id)
     if query_data != '/start':
@@ -72,7 +72,7 @@ def handle_start(bot, update):
     return 'HANDLE_MENU'
 
 
-def handle_menu(bot, update):
+def handle_menu(bot, update, job_queue):
     message_id, chat_id, query_data = get_query_data(update)
     if query_data == 'goto_cart':
         cart, products, total = get_cart(chat_id)
@@ -84,7 +84,7 @@ def handle_menu(bot, update):
     return 'HANDLE_DESCRIPTION'
 
 
-def handle_description(bot, update):
+def handle_description(bot, update, job_queue):
     message_id, chat_id, query_data = get_query_data(update)
     if query_data == 'goto_menu':
         display_menu(bot, chat_id)
@@ -103,7 +103,7 @@ def handle_description(bot, update):
         return 'HANDLE_CART'
 
 
-def handle_cart(bot, update):
+def handle_cart(bot, update, job_queue):
     message_id, chat_id, query_data = get_query_data(update)
     if query_data == 'goto_menu':
         display_menu(bot, chat_id)
@@ -123,7 +123,7 @@ def handle_cart(bot, update):
         return 'HANDLE_CART'
 
 
-def handle_checkout_geo(bot, update):
+def handle_checkout_geo(bot, update, job_queue):
     global database
     message_id, chat_id, query_data = get_query_data(update)
     try:
@@ -143,7 +143,7 @@ def handle_checkout_geo(bot, update):
         return 'HANDLE_CHECKOUT_GEO'
 
 
-def handle_checkout_receipt(bot, update):
+def handle_checkout_receipt(bot, update, job_queue):
     global database
     message_id, chat_id, query_data = get_query_data(update)
     cart, products, total = get_cart(chat_id)
@@ -157,7 +157,7 @@ def handle_checkout_receipt(bot, update):
         bot.send_location(latitude=lat, longitude=long, chat_id=courier_telegram_id)
         bot.send_message(text=f'Заказ:\n{products}\nСумма:{total} руб.',
                         chat_id=courier_telegram_id)
-        #job_queue.run_once(add_reminder, REMINDER_TIME, context=chat_id)
+        job_queue.run_once(add_reminder, REMINDER_TIME, context=chat_id)
         bot.send_message(text=f'Заказ принят и скоро будет доставлен! Как будете оплачивать?', chat_id=chat_id, reply_markup=reply_markup)
     elif query_data == 'goto_checkout_pickup':
         bot.send_message(text=f'Отлично! Ждем вас по адресу: {address}. Как будете оплачивать?', chat_id=chat_id, reply_markup=reply_markup)
@@ -166,7 +166,7 @@ def handle_checkout_receipt(bot, update):
     return 'HANDLE_CHECKOUT_PAYMENT'
 
 
-def handle_checkout_payment(bot, update):
+def handle_checkout_payment(bot, update, job_queue):
     message_id, chat_id, query_data = get_query_data(update)
     cart, products, total = get_cart(chat_id)
     if query_data == 'goto_payment_cash':
@@ -198,7 +198,7 @@ def handle_successful_payment(bot, update):
     update.message.reply_text('Спасибо за заказ!')
 
 
-def handle_users_reply(bot, update):
+def handle_users_reply(bot, update, job_queue):
     # Handles all user's actions. Gets current statement,
     # runs relevant function and set new statement.
     global database
@@ -219,9 +219,9 @@ def handle_users_reply(bot, update):
             'HANDLE_CHECKOUT_PAYMENT': handle_checkout_payment,
         }
     state_handler = states_functions[user_state]
-    #l.info(f'job_queue: {job_queue}, state_handler: {state_handler}')
+    l.info(f'job_queue: {job_queue}, state_handler: {state_handler}')
     try:
-        next_state = state_handler(bot, update)
+        next_state = state_handler(bot, update, job_queue)
         database.set(chat_id, next_state)
     except MoltinError as e:
         logging.critical(e)
