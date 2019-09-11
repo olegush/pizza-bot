@@ -6,10 +6,10 @@ import requests
 from requests.exceptions import HTTPError, ConnectionError
 from dotenv import load_dotenv
 
-from common import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
-                    MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_FLOW_CUSTOMERS,
-                    DVMN_ERR_MSG, DvmnError, create_flow, create_fields)
-
+from moltin import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
+                    MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_FLOW_ADDRESSES,
+                    create_flow, create_fields)
+                    
 
 FLOW_CUSTOMERS_FIELDS = {
     'id_field': 'string',

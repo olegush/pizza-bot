@@ -6,9 +6,9 @@ import requests
 from requests.exceptions import HTTPError, ConnectionError
 from dotenv import load_dotenv
 
-from common import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
+from moltin import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
                     MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_FLOW_ADDRESSES,
-                    DVMN_ERR_MSG, DvmnError, create_flow, create_fields)
+                    create_flow, create_fields)
 
 
 FLOW_ADDRESSES_FIELDS = {
@@ -22,7 +22,7 @@ FLOW_ADDRESSES_FIELDS = {
 
 
 @get_headers
-def export_addresses(headers, url):
+def import_addresses(headers, url):
     try:
         response = requests.get(url)
         addresses = response.json()
@@ -67,5 +67,5 @@ if __name__ == '__main__':
     print(moltin_create_fields)
 
     # Export addresses
-    moltin_addresses = export_addresses(os.environ.get('URL_ADDRESSES'))
+    moltin_addresses = import_addresses(os.environ.get('URL_ADDRESSES'))
     print(moltin_addresses)
