@@ -5,51 +5,9 @@ import requests
 from requests.exceptions import HTTPError, ConnectionError
 
 
-MOLTIN_API_URL = 'https://api.moltin.com/v2'
-MOLTIN_API_OAUTH_URL = 'https://api.moltin.com/oauth/access_token'
-MOLTIN_ERR_MSG = 'Moltin API returns error:'
-MOLTIN_FLOW_ADDRESSES = 'addresses2'
-MOLTIN_FLOW_CUSTOMERS = 'customers2'
-DVMN_ERR_MSG = 'DVMN API returns error:'
-
-load_dotenv()
-
-class MoltinError(Exception):
-    def __init__(self, message):
-        self.message = message
-
-class DvmnError(Exception):
-    def __init__(self, message):
-        self.message = message
-
-
-def check_resp_json(resp):
-    if 'errors' in resp.json():
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {resp.json()}')
-
-
-def get_headers(func):
-    def wrapper(*args):
-        moltin_client_id = os.environ.get('MOLTIN_CLIENT_ID')
-        moltin_client_secret = os.environ.get('MOLTIN_CLIENT_SECRET')
-        data = {'client_id': str(moltin_client_id),
-                'client_secret': str(moltin_client_secret),
-                'grant_type': 'client_credentials'}
-        try:
-            resp = requests.post(MOLTIN_API_OAUTH_URL, data=data)
-            resp.raise_for_status()
-            check_resp_json(resp)
-            moltin_token = resp.json()['access_token']
-            headers = {
-                'Authorization': 'Bearer {}'.format(moltin_token),
-                'Content-Type': 'application/json'
-            }
-            return func(headers, *args)
-        except HTTPError as e:
-            raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
-        except ConnectionError as e:
-            raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
-    return wrapper
+from moltin_imports import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
+                    MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_API_FLOW_SLUG,
+                    DVMN_ERR_MSG, DvmnError)
 
 
 @get_headers

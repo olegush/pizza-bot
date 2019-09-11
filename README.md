@@ -5,7 +5,7 @@ This telegram bot is simple e-shop based on [Moltin API](https://moltin.com) and
 
 ## How to install and deploy
 
-1.Get domain and SSL-certificate, put url to **.env** file.
+1. Get domain and SSL-certificate, put url to **.env** file.
 
 ```bash
 URL=https://example.com

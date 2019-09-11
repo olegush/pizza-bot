@@ -24,10 +24,8 @@ app = Flask(__name__)
 bot = telegram.Bot(token=TG_TOKEN)
 update_queue = Queue()
 dispatcher = Dispatcher(bot, update_queue)
-# Start the thread
 thread = Thread(target=dispatcher.start, name='dispatcher')
 thread.start()
-#dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(CallbackQueryHandler(handle_users_reply, pass_job_queue=True))
 dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply, pass_job_queue=True))
 dispatcher.add_handler(MessageHandler(Filters.location, handle_users_reply, pass_job_queue=True))
@@ -42,9 +40,7 @@ def respond():
     # Creates the Telegram bot, Dispatcher instance, registers all handlers,
     # get data from Telegram reguest, create update queue and process update.
     try:
-
         update = telegram.update.Update.de_json(request.get_json(force=True), bot)
-        #dispatcher.process_update(update)
         update_queue.put(update)
         return 'ok'
     except Exception as e:

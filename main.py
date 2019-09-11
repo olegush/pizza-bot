@@ -13,9 +13,6 @@ from moltin import (get_cart, get_customer, get_address,
                     display_menu, display_description, display_cart, display_address,
                     add_to_cart, delete_from_cart)
 
-import logging as l
-l.basicConfig(level=l.INFO, format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M', filename='log.log', filemode='a+')
-
 
 load_dotenv()
 
@@ -157,7 +154,7 @@ def handle_checkout_receipt(bot, update, job_queue):
         bot.send_location(latitude=lat, longitude=long, chat_id=courier_telegram_id)
         bot.send_message(text=f'Заказ:\n{products}\nСумма:{total} руб.',
                         chat_id=courier_telegram_id)
-        job_queue.run_once(add_reminder, REMINDER_TIME, context=chat_id)
+        #job_queue.run_once(add_reminder, REMINDER_TIME, context=chat_id)
         bot.send_message(text=f'Заказ принят и скоро будет доставлен! Как будете оплачивать?', chat_id=chat_id, reply_markup=reply_markup)
     elif query_data == 'goto_checkout_pickup':
         bot.send_message(text=f'Отлично! Ждем вас по адресу: {address}. Как будете оплачивать?', chat_id=chat_id, reply_markup=reply_markup)
@@ -202,7 +199,6 @@ def handle_users_reply(bot, update, job_queue):
     # Handles all user's actions. Gets current statement,
     # runs relevant function and set new statement.
     global database
-
     database = get_database_connection()
     message_id, chat_id, query_data = get_query_data(update)
     if query_data == '/start':
@@ -219,7 +215,6 @@ def handle_users_reply(bot, update, job_queue):
             'HANDLE_CHECKOUT_PAYMENT': handle_checkout_payment,
         }
     state_handler = states_functions[user_state]
-    l.info(f'job_queue: {job_queue}, state_handler: {state_handler}')
     try:
         next_state = state_handler(bot, update, job_queue)
         database.set(chat_id, next_state)

@@ -7,9 +7,8 @@ from requests.exceptions import HTTPError, ConnectionError
 from dotenv import load_dotenv
 from PIL import Image
 
-from common import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
-                    MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_API_FLOW_SLUG,
-                    DVMN_ERR_MSG, DvmnError)
+from moltin import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
+                    MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_API_FLOW_SLUG)
 
 
 SLUG_TRANS_MAP = {
@@ -102,7 +101,7 @@ def resize_image(slug):
     return filename_new
 
 
-def export_menu(url):
+def import_menu(url):
     try:
         response = requests.get(url)
         menu = response.json()
@@ -133,4 +132,4 @@ if __name__ == '__main__':
     moltin_client_id = os.environ.get('MOLTIN_CLIENT_ID')
     moltin_client_secret = os.environ.get('MOLTIN_CLIENT_SECRET')
     headers = get_headers(moltin_client_id, moltin_client_secret)
-    export_menu(os.environ.get('URL_MENU'))
+    import_menu(os.environ.get('URL_MENU'))
