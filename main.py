@@ -9,10 +9,8 @@ from telegram.ext import (Updater, Filters, Dispatcher,
                         PreCheckoutQueryHandler, ShippingQueryHandler)
 import yandex_geocoder
 
-from moltin import (get_cart, get_customer, get_address,
-                    display_menu, display_description, display_cart, display_address,
-                    add_to_cart, delete_from_cart)
-
+from moltin import get_cart, get_customer, get_addresses, get_address, add_to_cart, delete_from_cart
+from telegram_displays import display_menu, display_description, display_cart, display_address
 
 load_dotenv()
 
@@ -134,7 +132,8 @@ def handle_checkout_geo(bot, update, job_queue):
     except Exception as e:
         latitude, longitude, address_customer = None, None, None
     bot.delete_message(chat_id=chat_id, message_id=message_id - 1)
-    if display_address(bot, chat_id, latitude, longitude, address_customer, database):
+    addresses = get_addresses()
+    if display_address(bot, chat_id, latitude, longitude, address_customer, addresses, database):
         return 'HANDLE_CHECKOUT_RECEIPT'
     else:
         return 'HANDLE_CHECKOUT_GEO'
@@ -159,7 +158,6 @@ def handle_checkout_receipt(bot, update, job_queue):
     elif query_data == 'goto_checkout_pickup':
         bot.send_message(text=f'Отлично! Ждем вас по адресу: {address}. Как будете оплачивать?', chat_id=chat_id, reply_markup=reply_markup)
     bot.delete_message(chat_id=chat_id, message_id=message_id)
-
     return 'HANDLE_CHECKOUT_PAYMENT'
 
 
@@ -194,8 +192,11 @@ def handle_answer_payment(bot, update):
 def handle_successful_payment(bot, update):
     update.message.reply_text('Спасибо за заказ!')
 
+import logging as l
+l.basicConfig(level=l.INFO, format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M', filename='log.log', filemode='a+')
 
 def handle_users_reply(bot, update, job_queue):
+
     # Handles all user's actions. Gets current statement,
     # runs relevant function and set new statement.
     global database
@@ -215,6 +216,7 @@ def handle_users_reply(bot, update, job_queue):
             'HANDLE_CHECKOUT_PAYMENT': handle_checkout_payment,
         }
     state_handler = states_functions[user_state]
+    l.info(f'job_queue: {job_queue}, state_handler: {state_handler}')
     try:
         next_state = state_handler(bot, update, job_queue)
         database.set(chat_id, next_state)
