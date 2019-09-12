@@ -98,7 +98,7 @@ def get_customer(headers, id):
     resp.raise_for_status()
     check_resp_json(resp)
     data = resp.json()['data']
-    return data['latitude'], data['longitude'], data['nearest']
+    return data['latitude'], data['longitude'], data['nearest_shop_id']
 
 
 @get_headers
@@ -112,15 +112,15 @@ def get_address(headers, id):
 
 
 @get_headers
-def add_customer(headers, chat_id, lat, long, address, nearest):
+def add_customer(headers, chat_id, latitude, longitude, address, nearest_shop_id):
     data = {
         'data': {
             'type': 'entry',
             'id_field': chat_id,
-            'latitude': lat,
-            'longitude': long,
+            'latitude': latitude,
+            'longitude': longitude,
             'address': address,
-            'nearest': nearest,
+            'nearest_shop_id': nearest_shop_id,
         }
     }
     resp = requests.post(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_CUSTOMERS}/entries',
@@ -160,8 +160,8 @@ def delete_from_cart(headers, cart_id, item_id):
 
 
 @get_headers
-def display_address(headers, bot, chat_id, lat, long, address_customer, database):
-    if lat is None and long is None:
+def display_address(headers, bot, chat_id, latitude, longitude, address_customer, database):
+    if latitude is None and longitude is None:
         text = 'Не могу определить координаты. Уточните пожалуйста адрес.'
         bot.send_message(text=text, chat_id=chat_id)
         return False
@@ -172,12 +172,12 @@ def display_address(headers, bot, chat_id, lat, long, address_customer, database
     addresses = resp.json()['data']
     for address in addresses:
         address['distance'] = distance.distance(
-                                            (lat, long),
+                                            (latitude, longitude),
                                             (address['latitude'], address['longitude'])
                                         ).km
     nearest_address = min(addresses, key=lambda x: x['distance'])
     nearest_distance = round(nearest_address['distance'], 1)
-    nearest_id = nearest_address['id']
+    nearest_shop_id = nearest_address['id']
     nearest_address = nearest_address['address']
 
     if nearest_distance > 20:
@@ -190,7 +190,7 @@ def display_address(headers, bot, chat_id, lat, long, address_customer, database
         text = f'Ближайшая пиццерия в {nearest_distance} км от вас по адресу {nearest_address}. Заберете сами? Или привезем за самокате за 100 рублей'
     else:
         text = f'Вы совсем рядом! Ближайшая пиццерия всего в {nearest_distance} км от вас по адресу {nearest_address}. Заберете сами? Или можем доставить бесплатно.'
-    id_customer = add_customer(chat_id, lat, long, address_customer, nearest_id)
+    id_customer = add_customer(chat_id, latitude, longitude, address_customer, nearest_shop_id)
     database.set(f'{chat_id}_id_customer', id_customer)
     keyboard = [[InlineKeyboardButton('ДОСТАВКА', callback_data='goto_checkout_delivery')]]
     keyboard.append([InlineKeyboardButton('САМОВЫВОЗ', callback_data='goto_checkout_pickup')])

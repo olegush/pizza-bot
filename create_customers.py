@@ -9,14 +9,14 @@ from dotenv import load_dotenv
 from moltin import (check_resp_json, get_headers, MoltinError, MOLTIN_API_URL,
                     MOLTIN_API_OAUTH_URL, MOLTIN_ERR_MSG, MOLTIN_FLOW_ADDRESSES,
                     create_flow, create_fields)
-                    
+
 
 FLOW_CUSTOMERS_FIELDS = {
     'id_field': 'string',
     'latitude': 'float',
     'longitude': 'float',
     'address': 'string',
-    'nearest': 'string'
+    'nearest_shop_id': 'string'
 }
 
 

@@ -125,16 +125,16 @@ def handle_checkout_geo(bot, update, job_queue):
     message_id, chat_id, query_data = get_query_data(update)
     try:
         if isinstance(query_data, str):
-            long, lat = yandex_geocoder.Client.coordinates(query_data)
+            longitude, latitude = yandex_geocoder.Client.coordinates(query_data)
             address_customer = query_data
         else:
-            lat, long = query_data.latitude, query_data.longitude
+            latitude, longitude = query_data.latitude, query_data.longitude
             # TODO: add getting address by coordinates
             address_customer = ''
     except Exception as e:
-        lat, long, address_customer = None, None, None
+        latitude, longitude, address_customer = None, None, None
     bot.delete_message(chat_id=chat_id, message_id=message_id - 1)
-    if display_address(bot, chat_id, lat, long, address_customer, database):
+    if display_address(bot, chat_id, latitude, longitude, address_customer, database):
         return 'HANDLE_CHECKOUT_RECEIPT'
     else:
         return 'HANDLE_CHECKOUT_GEO'
@@ -145,13 +145,13 @@ def handle_checkout_receipt(bot, update, job_queue):
     message_id, chat_id, query_data = get_query_data(update)
     cart, products, total = get_cart(chat_id)
     customer_id = database.get(f'{chat_id}_id_customer').decode('utf-8')
-    lat, long, nearest_id = get_customer(customer_id)
-    address, courier_telegram_id = get_address(nearest_id)
+    latitude, longitude, nearest_shop_id = get_customer(customer_id)
+    address, courier_telegram_id = get_address(nearest_shop_id)
     keyboard = [[InlineKeyboardButton('ПО КАРТЕ', callback_data='goto_payment_card')],
                 [InlineKeyboardButton('НАЛИЧНЫМИ', callback_data='goto_payment_cash')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if query_data == 'goto_checkout_delivery':
-        bot.send_location(latitude=lat, longitude=long, chat_id=courier_telegram_id)
+        bot.send_location(latitude=latitude, longitude=longitude, chat_id=courier_telegram_id)
         bot.send_message(text=f'Заказ:\n{products}\nСумма:{total} руб.',
                         chat_id=courier_telegram_id)
         #job_queue.run_once(add_reminder, REMINDER_TIME, context=chat_id)
