@@ -53,99 +53,81 @@ def get_headers(func):
 
 @get_headers
 def get_products(headers):
-    try:
-        resp = requests.get(f'{MOLTIN_API_URL}/products', headers=headers)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        products = resp.json()['data']
-        return {product['id']: product['name'] for product in products}
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.get(f'{MOLTIN_API_URL}/products', headers=headers)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    products = resp.json()['data']
+    return {product['id']: product['name'] for product in products}
 
 
 @get_headers
 def get_product(headers, product_id):
-    try:
-        resp = requests.get(f'{MOLTIN_API_URL}/products/{product_id}',
+    resp = requests.get(f'{MOLTIN_API_URL}/products/{product_id}',
+                        headers=headers)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    product = resp.json()['data']
+    name = product['name']
+    description = product['description']
+    price = product['price'][0]['amount']
+    id_img = product['relationships']['main_image']['data']['id']
+    resp_img = requests.get(f'{MOLTIN_API_URL}/files/{id_img}',
                             headers=headers)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        product = resp.json()['data']
-        name = product['name']
-        description = product['description']
-        price = product['price'][0]['amount']
-        id_img = product['relationships']['main_image']['data']['id']
-        resp_img = requests.get(f'{MOLTIN_API_URL}/files/{id_img}',
-                                headers=headers)
-        resp_img.raise_for_status()
-        check_resp_json(resp_img)
-        href_img = resp_img.json()['data']['link']['href']
-        return name, description, price, href_img
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp_img.raise_for_status()
+    check_resp_json(resp_img)
+    href_img = resp_img.json()['data']['link']['href']
+    return name, description, price, href_img
 
 
 @get_headers
 def get_cart(headers, cart_id):
-    try:
-        resp = requests.get(f'{MOLTIN_API_URL}/carts/{cart_id}/items',
-                            headers=headers)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        cart = resp.json()
-        products = '\n'.join((f"{product['name']}: {product['quantity']} шт. по {product['unit_price']['amount']} руб." for product in cart['data']))
-        total = int(cart['meta']['display_price']['with_tax']['formatted'])
-        return cart, products, total
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.get(f'{MOLTIN_API_URL}/carts/{cart_id}/items',
+                        headers=headers)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    cart = resp.json()
+    products = '\n'.join((f"{product['name']}: {product['quantity']} шт. по {product['unit_price']['amount']} руб." for product in cart['data']))
+    total = int(cart['meta']['display_price']['with_tax']['formatted'])
+    return cart, products, total
 
 
 @get_headers
 def get_customer(headers, id):
-    try:
-        resp = requests.get(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_CUSTOMERS}/entries/{id}',
-                            headers=headers)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        data = resp.json()['data']
-        return data['latitude'], data['longitude'], data['nearest']
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.get(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_CUSTOMERS}/entries/{id}',
+                        headers=headers)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    data = resp.json()['data']
+    return data['latitude'], data['longitude'], data['nearest']
 
 
 @get_headers
 def get_address(headers, id):
-    try:
-        resp = requests.get(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_ADDRESSES}/entries/{id}',
-                            headers=headers)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        data = resp.json()['data']
-        return data['address'], data['courier_telegram_id']
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.get(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_ADDRESSES}/entries/{id}',
+                        headers=headers)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    data = resp.json()['data']
+    return data['address'], data['courier_telegram_id']
 
 
 @get_headers
 def add_customer(headers, chat_id, lat, long, address, nearest):
-    try:
-        data = {
-            'data': {
-                'type': 'entry',
-                'id_field': chat_id,
-                'latitude': lat,
-                'longitude': long,
-                'address': address,
-                'nearest': nearest,
-            }
+    data = {
+        'data': {
+            'type': 'entry',
+            'id_field': chat_id,
+            'latitude': lat,
+            'longitude': long,
+            'address': address,
+            'nearest': nearest,
         }
-        resp = requests.post(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_CUSTOMERS}/entries',
-                            headers=headers, json=data)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        return resp.json()['data']['id']
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    }
+    resp = requests.post(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_CUSTOMERS}/entries',
+                        headers=headers, json=data)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    return resp.json()['data']['id']
 
 
 @get_headers
@@ -157,30 +139,24 @@ def add_to_cart(headers, cart_id, product_id):
             'quantity': 1,
         }
     }
-    try:
-        headers['X-MOLTIN-CURRENCY'] = 'RUB'
-        resp = requests.post(f'{MOLTIN_API_URL}/carts/{cart_id}/items',
-                            headers=headers, json=data)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        cart = resp.json()
-        products = '\n'.join((f"{product['name']}: {product['quantity']} шт. по {product['unit_price']['amount']} руб." for product in cart['data']))
-        total = int(cart['meta']['display_price']['with_tax']['formatted'])
-        return cart, products, total
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    headers['X-MOLTIN-CURRENCY'] = 'RUB'
+    resp = requests.post(f'{MOLTIN_API_URL}/carts/{cart_id}/items',
+                        headers=headers, json=data)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    cart = resp.json()
+    products = '\n'.join((f"{product['name']}: {product['quantity']} шт. по {product['unit_price']['amount']} руб." for product in cart['data']))
+    total = int(cart['meta']['display_price']['with_tax']['formatted'])
+    return cart, products, total
 
 
 @get_headers
 def delete_from_cart(headers, cart_id, item_id):
-    try:
-        resp = requests.delete(f'{MOLTIN_API_URL}/carts/{cart_id}/items/{item_id}',
-                                headers=headers)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        return resp.json()
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.delete(f'{MOLTIN_API_URL}/carts/{cart_id}/items/{item_id}',
+                            headers=headers)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    return resp.json()
 
 
 @get_headers
@@ -189,14 +165,11 @@ def display_address(headers, bot, chat_id, lat, long, address_customer, database
         text = 'Не могу определить координаты. Уточните пожалуйста адрес.'
         bot.send_message(text=text, chat_id=chat_id)
         return False
-    try:
-        resp = requests.get(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_ADDRESSES}/entries',
-                            headers=headers)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        addresses = resp.json()['data']
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.get(f'{MOLTIN_API_URL}/flows/{MOLTIN_FLOW_ADDRESSES}/entries',
+                        headers=headers)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    addresses = resp.json()['data']
     for address in addresses:
         address['distance'] = distance.distance(
                                             (lat, long),
@@ -269,66 +242,54 @@ def create_flow(headers, name):
             'enabled': True
         }
     }
-    try:
-        resp = requests.post(f'{MOLTIN_API_URL}/flows', headers=headers, json=data)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        return resp.json()
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.post(f'{MOLTIN_API_URL}/flows', headers=headers, json=data)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    return resp.json()
 
 
 @get_headers
 def create_fields(headers, flow_id, fields):
-    try:
-        result = ''
-        for field, type in fields.items():
-            data = {
-                'data': {
-                    'type': 'field',
-                    'name': field,
-                    'slug': field,
-                    'field_type': type,
-                    'description': '',
-                    'required': False,
-                    'unique': False,
-                    'default': 0,
-                    'enabled': True,
-                    'order': 1,
-                    'relationships': {
-                        'flow': {
-                            'data': {
-                                'type': 'flow',
-                                'id': flow_id
-                            }
+    result = ''
+    for field, type in fields.items():
+        data = {
+            'data': {
+                'type': 'field',
+                'name': field,
+                'slug': field,
+                'field_type': type,
+                'description': '',
+                'required': False,
+                'unique': False,
+                'default': 0,
+                'enabled': True,
+                'order': 1,
+                'relationships': {
+                    'flow': {
+                        'data': {
+                            'type': 'flow',
+                            'id': flow_id
                         }
                     }
                 }
             }
-            resp = requests.post(f'{MOLTIN_API_URL}/fields', headers=headers, json=data)
-            resp.raise_for_status()
-            check_resp_json(resp)
-            result +=  ', ' + str(resp.json()['data']['name'])
-        return f'Fields: {result} was created'
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+        }
+        resp = requests.post(f'{MOLTIN_API_URL}/fields', headers=headers, json=data)
+        resp.raise_for_status()
+        check_resp_json(resp)
+        result +=  ', ' + str(resp.json()['data']['name'])
+    return f'Fields: {result} was created'
 
 
 @get_headers
 def delete_flow(headers, id):
-    try:
-        resp = requests.delete(f'{MOLTIN_API_URL}/flows/{id}', headers=headers)
-        resp.raise_for_status()
-        return resp
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.delete(f'{MOLTIN_API_URL}/flows/{id}', headers=headers)
+    resp.raise_for_status()
+    return resp
 
 
 @get_headers
 def get_flow_fields(headers, name):
-    try:
-        resp = requests.get(f'{MOLTIN_API_URL}/flows/{name}/fields', headers=headers)
-        resp.raise_for_status()
-        return resp.json()
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.get(f'{MOLTIN_API_URL}/flows/{name}/fields', headers=headers)
+    resp.raise_for_status()
+    return resp.json()

@@ -220,5 +220,3 @@ def handle_users_reply(bot, update, job_queue):
         database.set(chat_id, next_state)
     except MoltinError as e:
         logging.critical(e)
-    except Exception as e:
-        raise e

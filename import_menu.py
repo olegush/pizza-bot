@@ -59,13 +59,10 @@ def create_relationship(headers, product_id, img_id):
             'id': img_id
         }
     }
-    try:
-        resp = requests.post(f'{MOLTIN_API_URL}/products/{product_id}/relationships/main-image', headers=headers, json=data)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        return resp.json()
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.post(f'{MOLTIN_API_URL}/products/{product_id}/relationships/main-image', headers=headers, json=data)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    return resp.json()
 
 
 @get_headers
@@ -83,13 +80,10 @@ def create_product(headers, name, slug, sku, description, price):
             'commodity_type': 'physical'
         }
     }
-    try:
-        resp = requests.post(f'{MOLTIN_API_URL}/products', headers=headers, json=data)
-        resp.raise_for_status()
-        check_resp_json(resp)
-        return resp.json()
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+    resp = requests.post(f'{MOLTIN_API_URL}/products', headers=headers, json=data)
+    resp.raise_for_status()
+    check_resp_json(resp)
+    return resp.json()
 
 
 def resize_image(slug):
@@ -106,25 +100,22 @@ def import_menu(url):
         response = requests.get(url)
         menu = response.json()
     except (HTTPError, ConnectionError) as e:
-        raise DvmnError(f'{DVMN_ERR_MSG} {e}')
-    try:
-        for pizza in menu[1:]:
-            id = pizza['id']
-            slug = get_slug(pizza['name'])
-            sku = f'{slug}{id}'
-            food_value = OrderedDict(pizza['food_value']).items()
-            food_value = ', '.join(f'{FOOD_VALUE_MAP[key]}: {amount}' for key, amount in food_value)
-            description = '{}\n\n{}'.format(pizza['description'], food_value)
-            moltin_product = create_product(pizza['name'], slug, sku, description, pizza['price'])
-            resp = requests.get(pizza['product_image']['url'])
-            with open(f'{IMAGES_DIR}/{slug}.jpg', 'wb') as file:
-                file.write(resp.content)
-            filename_new = resize_image(slug)
-            moltin_file = create_file(f'{IMAGES_DIR}/{filename_new}')
-            moltin_relationship = create_relationship(moltin_product['data']['id'], moltin_file['data']['id'])
-            print('"{}" pizza exported successfully.'.format(pizza['name']))
-    except HTTPError as e:
-        raise MoltinError(f'{MOLTIN_ERR_MSG} {e}')
+        print(f'Import menu error: {e}')
+    for pizza in menu[1:]:
+        id = pizza['id']
+        slug = get_slug(pizza['name'])
+        sku = f'{slug}{id}'
+        food_value = OrderedDict(pizza['food_value']).items()
+        food_value = ', '.join(f'{FOOD_VALUE_MAP[key]}: {amount}' for key, amount in food_value)
+        description = '{}\n\n{}'.format(pizza['description'], food_value)
+        moltin_product = create_product(pizza['name'], slug, sku, description, pizza['price'])
+        resp = requests.get(pizza['product_image']['url'])
+        with open(f'{IMAGES_DIR}/{slug}.jpg', 'wb') as file:
+            file.write(resp.content)
+        filename_new = resize_image(slug)
+        moltin_file = create_file(f'{IMAGES_DIR}/{filename_new}')
+        moltin_relationship = create_relationship(moltin_product['data']['id'], moltin_file['data']['id'])
+        print('"{}" pizza exported successfully.'.format(pizza['name']))
 
 
 if __name__ == '__main__':
