@@ -165,15 +165,6 @@ def delete_from_cart(headers, cart_id, item_id):
     return resp.json()
 
 
-
-
-
-
-
-
-
-
-
 @get_headers
 def create_flow(headers, name):
     data = {
