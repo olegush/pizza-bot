@@ -4,6 +4,6 @@ python-dotenv==0.10.1
 python-telegram-bot==11.1.0
 requests==2.21.0
 redis==3.2.1
-Pillow==5.3.0
+Pillow==8.3.2
 yandex-geocoder==1.0.0
 geopy==1.20.0
